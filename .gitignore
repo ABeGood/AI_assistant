@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local env files
+.env
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Dependency directories
+venv/
+env/
+env.bak/
+pipenv/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Tests and test coverage
+htmlcov/
+.coverage
+.coverage.*
+*.pyc
