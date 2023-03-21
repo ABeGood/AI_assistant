@@ -96,9 +96,10 @@ def fit_beam_end_to_rect(beam, top_left, bot_right):
 
 
 def closest_point_on_segment(segment_start, segment_end, point):
-    segment_vector = segment_end - segment_start
-    point_vector = point - segment_start
-    projection_length = point_vector.dot(segment_vector) / segment_vector.dot(segment_vector)
+    segment_vector = segment_end - segment_start  # Get vector from line start to line end
+    point_vector = point - segment_start  # Get vector from line start to the point
+    projection_length = point_vector.dot(segment_vector) / segment_vector.dot(segment_vector)  # Get projection of point vector to segment vector
+
     if projection_length < 0:
         return segment_start
     elif projection_length > 1:
@@ -109,5 +110,6 @@ def closest_point_on_segment(segment_start, segment_end, point):
 
 
 def distance_point_to_point(point1, point2):
+    # Get distance between two points by Pythagoras
     dist = math.sqrt((point2[0]-point1[0])**2 + (point2[1]-point1[1])**2)
     return dist
