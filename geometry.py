@@ -43,13 +43,13 @@ def get_line_line_intersection(line1, line2):
     x3, y3 = line2[0][0], line2[0][1]
     x4, y4 = line2[1][0], line2[1][1]
     denom = (y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)
-    if denom == 0: # parallel
+    if denom == 0:  # parallel
         return None
     ua = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / denom
-    if ua < 0 or ua > 1: # out of range
+    if ua < 0 or ua > 1:  # out of range
         return None
     ub = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / denom
-    if ub < 0 or ub > 1: # out of range
+    if ub < 0 or ub > 1:  # out of range
         return None
     x = int(x1 + ua * (x2-x1))
     y = int(y1 + ua * (y2-y1))

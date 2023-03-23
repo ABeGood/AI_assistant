@@ -3,7 +3,8 @@ import geometry as geom
 import numpy as np
 import my_mediapipe as mmp
 
-
+global mode
+mode = 0
 rect = [320, 115, 40, 40]
 rect_center = [rect[0], rect[1]]
 rect_color = (255, 0, 0)
@@ -15,11 +16,13 @@ beam_right_end = [0, 0]
 
 bulb_selected = False
 dist = 0
-snap_dist = 100;
+snap_dist = 100
 
-pose_solution, pose = mmp.init_mp_pose(detect_conf=0.4, track_conf=0.4, static_img=False, complexity=1)
+pose_solution, pose_detector = mmp.init_mp_pose(detect_conf=0.4, track_conf=0.4, static_img=False, complexity=1)
 mp_draw = mmp.init_mp_draw()
 
+
+# TODO All cv2 actions can be done in frame_handler.py
 cam = cv2.VideoCapture(0)
 
 while cam.isOpened():
@@ -33,7 +36,7 @@ while cam.isOpened():
     # Process image
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame.flags.writeable = False
-    pose_results = pose.process(frame)
+    pose_results = pose_detector.process(frame)
     frame.flags.writeable = True
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
