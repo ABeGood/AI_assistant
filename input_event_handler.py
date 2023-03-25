@@ -1,56 +1,64 @@
+from enum import Enum
 import bboxes as bb
 import cv2
 
 
+class Mode(Enum):
+    NONE = 0
+    DRAWING = 1
+    REMOVE = 2
+
+
+current_mode = Mode.NONE
+
+
 # function to select modes (None/Draw/Remove)
-def select_mode(new_mode):
-    global selected_box_id, mode
-    mode = new_mode
+def set_mode(new_mode: Mode):  # Takes enum Mode as argument
+    global current_mode
+    if new_mode != Mode.REMOVE:
+        bb.selected_box_id = None
+
+    current_mode = new_mode
 
 
-# function to process keyboard operations
-def keyboard_listener(key_input, current_mode):
-    global selected_box_id
-    new_mode = -1
+def keyboard_listener(key_input):
 
     if key_input == 110:  # n None
-        new_mode = 0
-        selected_box_id = -1
+        set_mode(Mode.NONE)
+
     elif key_input == 100:  # d  Draw
-        new_mode = 1
-        selected_box_id = -1
+        set_mode(Mode.DRAWING)
 
     elif key_input == 114:  # r Remove
-        if current_mode == 2:  # delete key
-            bb.delete_box(selected_box_id)
-            selected_box_id = -1
+        if current_mode == Mode.REMOVE:  # delete key
+            bb.delete_box(bb.selected_box_id)
         else:
-            new_mode = 2
-            select_mode(new_mode)
+            set_mode(Mode.REMOVE)
 
 
 # mouse callback function
 def click_recall(event, x, y, flags, param):
-    global mode, selected_box_id, x1, y1, x2, y2, drawing
+    global current_mode
 
-    if mode == 1:
+    if current_mode == Mode.DRAWING:
         # if the left mouse button was clicked, record the starting and set the drawing flag to True
         if event == cv2.EVENT_LBUTTONDOWN:
-            drawing = True
-            x1, y1 = x, y
+            bb.drawing = True
+            bb.x1, bb.y1 = x, y
 
         # mouse is being moved, draw rectangle
-        elif event == cv2.EVENT_MOUSEMOVE:
-            if drawing == True:
-                x2, y2 = x, y
+        if event == cv2.EVENT_MOUSEMOVE:
+            if bb.drawing:
+                bb.x2, bb.y2 = x, y
 
         # if the left mouse button was released, set the drawing flag to False
-        elif event == cv2.EVENT_LBUTTONUP:
-            drawing = False
-            bb.add_box(x1, y1, x2, y2)
+        if event == cv2.EVENT_LBUTTONUP:
+            bb.drawing = False
+            bb.add_box(bb.x1, bb.y1, bb.x2, bb.y2)
 
-    elif mode == 2:
+    elif current_mode == Mode.REMOVE:
         if event == cv2.EVENT_LBUTTONDOWN:
             # if the left mouse button was clicked iterate trough bboxes_list and check is click event coords
             # are inside bbox borders
-            selected_box_id = bb.check_box_selection(x, y)
+            bb.selected_box_id = bb.check_box_selection(x, y)
+
