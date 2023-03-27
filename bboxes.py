@@ -102,7 +102,8 @@ def load_bboxes():
             return boxes_list
         else:
             print("\033[33mbboxes.json is empty.\033[0m")
-    print("\033[33mbboxes.json does not exist.\033[0m")
+    else:
+        print("\033[33mbboxes.json does not exist.\033[0m")
 
 
 def save_bboxes():

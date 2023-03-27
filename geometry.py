@@ -1,6 +1,7 @@
 # Module for calculating beams from landmarks
 # and calculating of intersections of bounding boxes and the beams
 import math
+import frame_handler as fh
 
 
 def get_beam(start, end, w, h):
@@ -9,32 +10,17 @@ def get_beam(start, end, w, h):
     return [beam_start, beam_end]
 
 
-def get_beam(start, end, w, h, length):
+def get_beam(start, end):
+    w, h = fh.get_frame_size()
     beam_start = [int(start.x * w), int(start.y * h)]
-    beam_end = [int((end.x - start.x) * w * length),
-                int((end.y - start.y) * h * length)]
+    beam_end = [int((end.x - start.x) * w * 10),  # *10 to make beam longer than the arm
+                int((end.y - start.y) * h * 10)]  # *10 to make beam longer than the arm
 
     beam = fit_beam_end_to_rect([beam_start, beam_end], [0, 0], [w-1, h-1])
     beam_start = beam[0]
     beam_end = beam[1]
     return [beam_start, beam_end]
 
-# infinite lines intersection
-# def get_line_line_intersection(line1, line2):
-#     x1, y1 = line1[0][0], line1[0][1]
-#     x2, y2 = line1[1][0], line1[1][1]
-#     x3, y3 = line2[0][0], line2[0][1]
-#     x4, y4 = line2[1][0], line2[1][1]
-#
-#     d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-#
-#     if d == 0:
-#         return None
-#
-#     x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / d
-#     y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / d
-#
-#     return x, y
 
 # line segments intersection
 def get_line_line_intersection(line1, line2):

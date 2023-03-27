@@ -1,7 +1,9 @@
 import cv2 as cv
-import numpy as np
 import bboxes as bb
 import input_event_handler as ieh
+import pose_processing as pose_proc
+import hands_processing as hands_proc
+import my_mediapipe as mmp
 
 
 bb.load_bboxes()
@@ -15,6 +17,13 @@ def init_cv2(input_source):
     cam = cv.VideoCapture(input_source)
     cv.namedWindow('image')
     cv.setMouseCallback('image', ieh.click_recall)
+
+
+def get_frame_size():
+    cam_ret, frame = cam.read()
+    width = frame.shape[0]
+    height = frame.shape[1]
+    return width, height
 
 
 def update_bboxes_on_frame(frame):
@@ -51,12 +60,19 @@ def start_cv2():
 
         # TODO give the frame to hands and pose processor
 
-        # # Process image
-        # frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-        # frame.flags.writeable = False
-        #
-        # frame.flags.writeable = True
-        # frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+        # Process image for pose
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        frame.flags.writeable = False
+        pose_landmarks = pose_proc.get_pose_landmarks(frame)
+        # hands_landmarks = hands_proc.get_both_hands_landmarks(frame)
+        hands_landmarks = hands_proc.get_one_hand_landmarks(frame, 'r')
+        frame.flags.writeable = True
+        frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+
+        frame = mmp.draw_pose_landmarks(frame, pose_landmarks)
+        # frame = mmp.draw_both_hands_landmarks(frame, hands_landmarks)
+        mmp.draw_one_hand_landmarks(frame, hands_landmarks)
+
 
         input_key = cv.waitKey(10)  # Argument must be "10" to not freeze on first frame
 
