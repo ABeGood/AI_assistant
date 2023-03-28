@@ -4,6 +4,7 @@ import input_event_handler as ieh
 import pose_processing as pose_proc
 import hands_processing as hands_proc
 import my_mediapipe as mmp
+import geometry as geom
 
 
 bb.load_bboxes()
@@ -29,6 +30,8 @@ def get_frame_size():
 def update_bboxes_on_frame(frame):
     for box in bb.boxes_list:
         if box.id == bb.selected_box_id:
+            color = (0, 0, 255)
+        elif box.id == bb.pointed_box_id:
             color = (0, 255, 0)
         else:
             color = (255, 0, 0)
@@ -58,8 +61,6 @@ def start_cv2():
     while cam.isOpened():
         cam_ret, frame = cam.read()
 
-        # TODO give the frame to hands and pose processor
-
         # Process image for pose
         frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         frame.flags.writeable = False
@@ -69,10 +70,18 @@ def start_cv2():
         frame.flags.writeable = True
         frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
 
+        # TODO move beams somewhere else
+        beam_r = pose_proc.get_right_beam(pose_landmarks)
+
+        # TODO: Solve issue with beam
+        if beam_r is not None:
+            cv.line(frame, (beam_r[0][0], beam_r[0][1]), (beam_r[1][0], beam_r[1][1]),
+                    (0, 0, 255), 2)
+        bb.get_pointed_box_id(beam_r)
+
         frame = mmp.draw_pose_landmarks(frame, pose_landmarks)
         # frame = mmp.draw_both_hands_landmarks(frame, hands_landmarks)
         mmp.draw_one_hand_landmarks(frame, hands_landmarks)
-
 
         input_key = cv.waitKey(10)  # Argument must be "10" to not freeze on first frame
 

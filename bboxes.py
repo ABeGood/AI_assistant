@@ -1,9 +1,11 @@
 import json
 import os
+import geometry as geom
 
 
 path_to_bboxes = "bboxes.json"
 selected_box_id = None
+pointed_box_id = None
 boxes_list = []
 x1, y1, x2, y2 = None, None, None, None
 drawing = False
@@ -113,3 +115,22 @@ def save_bboxes():
     json_file.write(json_string)
     json_file.close()
 
+
+def get_pointed_box_id(beam):
+    global pointed_box_id
+    if beam is not None:
+        for box in boxes_list:
+            if geom.get_line_box_intersection(beam, box):
+                pointed_box_id = box.id
+                return box.id
+            else:
+                pointed_box_id = None
+                return None
+    else:
+        pointed_box_id = None
+        return None
+
+
+# def highlight_pointed_box(id):
+#     for box in boxes_list:
+#         if box.id == id:

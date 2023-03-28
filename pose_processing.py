@@ -12,13 +12,15 @@ def get_pose_landmarks(frame):
 
 
 def get_right_beam(pose_landmarks):
-    if (pose_landmarks.landmark[13].visibility > min_visibility) and (pose_landmarks.landmark[15].visibility > min_visibility):
-        return geom.get_beam(pose_landmarks.landmark[13], pose_landmarks.landmark[15])
+    if pose_landmarks is not None:
+        if (pose_landmarks.landmark[13].visibility > min_visibility) and (pose_landmarks.landmark[15].visibility > min_visibility):
+            return geom.get_beam(pose_landmarks.landmark[13], pose_landmarks.landmark[15])
 
 
-def get_right_beam(pose_landmarks):
-    if (pose_landmarks.landmark[14].visibility > min_visibility) and (pose_landmarks.landmark[16].visibility > min_visibility):
-        return geom.get_beam(pose_landmarks.landmark[14], pose_landmarks.landmark[16])
+def get_left_beam(pose_landmarks):
+    if pose_landmarks is not None:
+        if (pose_landmarks.landmark[14].visibility > min_visibility) and (pose_landmarks.landmark[16].visibility > min_visibility):
+            return geom.get_beam(pose_landmarks.landmark[14], pose_landmarks.landmark[16])
 
 
 

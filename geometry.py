@@ -2,6 +2,7 @@
 # and calculating of intersections of bounding boxes and the beams
 import math
 import frame_handler as fh
+import bboxes as bb
 
 
 def get_beam(start, end, w, h):
@@ -10,7 +11,7 @@ def get_beam(start, end, w, h):
     return [beam_start, beam_end]
 
 
-def get_beam(start, end):
+def get_beam(start, end):  # TODO change arguments or create another function
     w, h = fh.get_frame_size()
     beam_start = [int(start.x * w), int(start.y * h)]
     beam_end = [int((end.x - start.x) * w * 10),  # *10 to make beam longer than the arm
@@ -48,6 +49,25 @@ def get_line_rect_intersection(line, rect):
     rect_line_2 = [[rect[0]+rect[2]/2, rect[1]+rect[3]/2], [rect[0]+rect[2]/2, rect[1]-rect[3]/2]]   # rt to rb
     rect_line_3 = [[rect[0]+rect[2]/2, rect[1]-rect[3]/2], [rect[0]-rect[2]/2, rect[1]-rect[3]/2]]   # lb to rb
     rect_line_4 = [[rect[0]-rect[2]/2, rect[1]-rect[3]/2], [rect[0]-rect[2]/2, rect[1]+rect[3]/2]]   # lb to lt
+
+    if get_line_line_intersection(line, rect_line_1) is not None:
+        ret_val = True
+    if get_line_line_intersection(line, rect_line_2) is not None:
+        ret_val = True
+    if get_line_line_intersection(line, rect_line_3) is not None:
+        ret_val = True
+    if get_line_line_intersection(line, rect_line_4) is not None:
+        ret_val = True
+
+    return ret_val
+
+
+def get_line_box_intersection(line, box):
+    ret_val = False
+    rect_line_1 = [[box.x1, box.y1], [box.x2, box.y1]]   # lt to rt
+    rect_line_2 = [[box.x2, box.y1], [box.x2, box.y2]]   # rt to rb
+    rect_line_3 = [[box.x2, box.y2], [box.x1, box.y2]]   # lb to rb
+    rect_line_4 = [[box.x1, box.y2], [box.x1, box.y1]]   # lb to lt
 
     if get_line_line_intersection(line, rect_line_1) is not None:
         ret_val = True
