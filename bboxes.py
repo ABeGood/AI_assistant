@@ -1,6 +1,7 @@
 import json
 import os
 import geometry as geom
+import numpy as np
 
 
 path_to_bboxes = "bboxes.json"
@@ -9,6 +10,7 @@ pointed_box_id = None
 boxes_list = []
 x1, y1, x2, y2 = None, None, None, None
 drawing = False
+max_snap_distance = 120
 
 
 class Bbox:
@@ -116,6 +118,17 @@ def save_bboxes():
     json_file.close()
 
 
+def get_snap_distance(beam, box: Bbox):
+    box_center = ((box.x1+box.x2)/2, (box.y1+box.y2)/2)
+    beam_start = (beam[0][0], beam[0][1])
+    beam_end = (beam[1][0], beam[1][1])
+    # TODO place all np.array() to one place
+    closest_point = tuple(map(int, geom.closest_point_on_segment(np.array(beam_start), np.array(beam_end), np.array(box_center))))
+    distance = int(geom.distance_point_to_point(closest_point, box_center))
+    return distance
+
+
+# TODO: what if beam intersects more than one box?
 def get_pointed_box_id(beam):
     global pointed_box_id
     if beam is not None:
@@ -124,11 +137,16 @@ def get_pointed_box_id(beam):
                 pointed_box_id = box.id
                 return box.id
             else:
-                pointed_box_id = None
-                return None
+                if pointed_box_id is not None:  # TODO change this ugly check
+                    print(get_snap_distance(beam, boxes_list[pointed_box_id]))
+                    if get_snap_distance(beam, boxes_list[pointed_box_id]) > max_snap_distance:
+                        pointed_box_id = None
+                        return None
     else:
         pointed_box_id = None
         return None
+
+# TODO: when box is selected create a snap and hold it selected until the snap breaks.
 
 
 # def highlight_pointed_box(id):

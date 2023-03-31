@@ -5,21 +5,25 @@ import frame_handler as fh
 import bboxes as bb
 
 
-def get_beam(start, end, w, h):
-    beam_start = [int(start.x * w), int(start.y * h)]
-    beam_end = [int(end.x * w), int(end.y * h)]
-    return [beam_start, beam_end]
+# def get_beam(start, end, w, h):
+#     beam_start = [int(start.x * w), int(start.y * h)]
+#     beam_end = [int(end.x * w), int(end.y * h)]
+#     return [beam_start, beam_end]
 
 
-def get_beam(start, end):  # TODO change arguments or create another function
+# TODO change arguments or create another function
+# TODO create beam class (beam.start, beam.end)
+def get_beam(start, end):
     w, h = fh.get_frame_size()
     beam_start = [int(start.x * w), int(start.y * h)]
-    beam_end = [int((end.x - start.x) * w * 10),  # *10 to make beam longer than the arm
-                int((end.y - start.y) * h * 10)]  # *10 to make beam longer than the arm
 
-    beam = fit_beam_end_to_rect([beam_start, beam_end], [0, 0], [w-1, h-1])
-    beam_start = beam[0]
-    beam_end = beam[1]
+    # TODO Loose precision in  int(end.x - start.x)
+    beam_end = [int((end.x - start.x) * w * 100),  # *10 to make beam longer than the arm
+                int((end.y - start.y) * h * 100)]  # *10 to make beam longer than the arm
+
+    # beam = fit_beam_end_to_rect([beam_start, beam_end], [0, 0], [w-1, h-1])
+    # beam_start = beam[0]
+    # beam_end = beam[1]
     return [beam_start, beam_end]
 
 

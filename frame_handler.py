@@ -5,6 +5,7 @@ import pose_processing as pose_proc
 import hands_processing as hands_proc
 import my_mediapipe as mmp
 import geometry as geom
+import numpy as np
 
 
 bb.load_bboxes()
@@ -22,8 +23,8 @@ def init_cv2(input_source):
 
 def get_frame_size():
     cam_ret, frame = cam.read()
-    width = frame.shape[0]
-    height = frame.shape[1]
+    width = frame.shape[1]
+    height = frame.shape[0]
     return width, height
 
 
@@ -42,11 +43,6 @@ def update_bboxes_on_frame(frame):
 # function to refresh frame to dynamically update bboxes and texts
 def refresh_frame(frame):
     output_img = frame.copy()
-
-    # TODO Decide if I need this here
-    # height = output_img.shape[0]
-    # width = output_img.shape[1]
-
     output_img = update_bboxes_on_frame(output_img)
 
     cv.putText(output_img, "Mode: {}".format(ieh.current_mode), (2, 12), cv.FONT_HERSHEY_SIMPLEX,
@@ -72,12 +68,16 @@ def start_cv2():
 
         # TODO move beams somewhere else
         beam_r = pose_proc.get_right_beam(pose_landmarks)
-
-        # TODO: Solve issue with beam
         if beam_r is not None:
             cv.line(frame, (beam_r[0][0], beam_r[0][1]), (beam_r[1][0], beam_r[1][1]),
                     (0, 0, 255), 2)
         bb.get_pointed_box_id(beam_r)
+        if bb.pointed_box_id is not None:
+            # TODO rework this ugly snapping
+            box_center = (int((bb.boxes_list[bb.pointed_box_id].x1 + bb.boxes_list[bb.pointed_box_id].x2) / 2),
+                          int((bb.boxes_list[bb.pointed_box_id].y1 + bb.boxes_list[bb.pointed_box_id].y2) / 2))
+            closest_point = tuple(map(int, geom.closest_point_on_segment(np.array(beam_r[0]), np.array(beam_r[1]), np.array(box_center))))
+            cv.line(frame, np.array(box_center), closest_point, (255, 255, 255), 2)
 
         frame = mmp.draw_pose_landmarks(frame, pose_landmarks)
         # frame = mmp.draw_both_hands_landmarks(frame, hands_landmarks)
