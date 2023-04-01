@@ -20,15 +20,13 @@ class Bbox:
         self.y1 = y1
         self.x2 = x2
         self.y2 = y2
+        self.center = ((x1+x2)/2, (y1+y2)/2)
 
     # function to deserialize json to list of Bbox objects
     def from_json(json_dict):
         return Bbox(json_dict['id'],
                     json_dict['x1'], json_dict['y1'],
                     json_dict['x2'], json_dict['y2'])
-
-
-
 
 
 # function to convert Bbox object to dictionary
@@ -120,10 +118,7 @@ def save_bboxes():
 
 def get_snap_distance(beam, box: Bbox):
     box_center = ((box.x1+box.x2)/2, (box.y1+box.y2)/2)
-    beam_start = (beam[0][0], beam[0][1])
-    beam_end = (beam[1][0], beam[1][1])
-    # TODO place all np.array() to one place
-    closest_point = tuple(map(int, geom.closest_point_on_segment(np.array(beam_start), np.array(beam_end), np.array(box_center))))
+    closest_point = geom.closest_point_on_segment(beam.start_xy, beam.end_xy, box_center)
     distance = int(geom.distance_point_to_point(closest_point, box_center))
     return distance
 
@@ -146,9 +141,3 @@ def get_pointed_box_id(beam):
         pointed_box_id = None
         return None
 
-# TODO: when box is selected create a snap and hold it selected until the snap breaks.
-
-
-# def highlight_pointed_box(id):
-#     for box in boxes_list:
-#         if box.id == id:

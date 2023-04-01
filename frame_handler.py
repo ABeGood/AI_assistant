@@ -8,6 +8,15 @@ import geometry as geom
 import numpy as np
 
 
+# class Frame:
+#     def __init__(self, x1, y1, x2, y2):
+#         self.id = id
+#         self.top_left = (x1, y1)
+#         self.top_right = (x2, y1)
+#         self.bot_left = (x1, y2)
+#         self.bot_right = (x2, y2)
+
+
 bb.load_bboxes()
 cam = None
 
@@ -69,14 +78,13 @@ def start_cv2():
         # TODO move beams somewhere else
         beam_r = pose_proc.get_right_beam(pose_landmarks)
         if beam_r is not None:
-            cv.line(frame, (beam_r[0][0], beam_r[0][1]), (beam_r[1][0], beam_r[1][1]),
-                    (0, 0, 255), 2)
-        bb.get_pointed_box_id(beam_r)
+            cv.line(frame, beam_r.start_xy, beam_r.end_xy, (0, 0, 255), 4)
+            bb.get_pointed_box_id(beam_r)
         if bb.pointed_box_id is not None:
             # TODO rework this ugly snapping
             box_center = (int((bb.boxes_list[bb.pointed_box_id].x1 + bb.boxes_list[bb.pointed_box_id].x2) / 2),
                           int((bb.boxes_list[bb.pointed_box_id].y1 + bb.boxes_list[bb.pointed_box_id].y2) / 2))
-            closest_point = tuple(map(int, geom.closest_point_on_segment(np.array(beam_r[0]), np.array(beam_r[1]), np.array(box_center))))
+            closest_point = tuple(map(int, geom.closest_point_on_segment(beam_r.start_xy, beam_r.end_xy, box_center)))
             cv.line(frame, np.array(box_center), closest_point, (255, 255, 255), 2)
 
         frame = mmp.draw_pose_landmarks(frame, pose_landmarks)

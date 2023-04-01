@@ -2,37 +2,45 @@
 # and calculating of intersections of bounding boxes and the beams
 import math
 import frame_handler as fh
-import bboxes as bb
+import numpy as np
 
 
-# def get_beam(start, end, w, h):
-#     beam_start = [int(start.x * w), int(start.y * h)]
-#     beam_end = [int(end.x * w), int(end.y * h)]
-#     return [beam_start, beam_end]
+class Beam:
+    def __init__(self, start, end):
+        self.start_xy = start
+        self.end_xy = end
+        self.start_x = start[0]
+        self.start_y = start[1]
+        self.end_x = end[0]
+        self.end_y = end[1]
 
 
-# TODO change arguments or create another function
-# TODO create beam class (beam.start, beam.end)
+class Frame:
+    def __init__(self, x1, y1, x2, y2):
+        self.id = id
+        self.top_left = (x1, y1)
+        self.top_right = (x2, y1)
+        self.bot_left = (x1, y2)
+        self.bot_right = (x2, y2)
+
+
 def get_beam(start, end):
     w, h = fh.get_frame_size()
-    beam_start = [int(start.x * w), int(start.y * h)]
+    frame = Frame(0, 0, w, h)
+    beam_start = int(start[0]*w), int(start[1]*h)
+    beam_end = int((end[0]-start[0])*1000)*w, int((end[1]-start[1])*1000)*h
+    beam = Beam(beam_start, beam_end)
 
-    # TODO Loose precision in  int(end.x - start.x)
-    beam_end = [int((end.x - start.x) * w * 100),  # *10 to make beam longer than the arm
-                int((end.y - start.y) * h * 100)]  # *10 to make beam longer than the arm
-
-    # beam = fit_beam_end_to_rect([beam_start, beam_end], [0, 0], [w-1, h-1])
-    # beam_start = beam[0]
-    # beam_end = beam[1]
-    return [beam_start, beam_end]
+    beam = fit_beam_end_to_frame(beam, frame)
+    return beam
 
 
 # line segments intersection
-def get_line_line_intersection(line1, line2):
-    x1, y1 = line1[0][0], line1[0][1]
-    x2, y2 = line1[1][0], line1[1][1]
-    x3, y3 = line2[0][0], line2[0][1]
-    x4, y4 = line2[1][0], line2[1][1]
+def get_beam_line_intersection(beam: Beam, line):
+    x1, y1 = beam.start_x, beam.start_y
+    x2, y2 = beam.end_x, beam.end_y
+    x3, y3 = line[0][0], line[0][1]
+    x4, y4 = line[1][0], line[1][1]
     denom = (y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)
     if denom == 0:  # parallel
         return None
@@ -47,20 +55,20 @@ def get_line_line_intersection(line1, line2):
     return x, y
 
 
-def get_line_rect_intersection(line, rect):
+def get_beam_rect_intersection(beam, rect):
     ret_val = False
     rect_line_1 = [[rect[0]-rect[2]/2, rect[1]+rect[3]/2], [rect[0]+rect[2]/2, rect[1]+rect[3]/2]]   # lt to rt
     rect_line_2 = [[rect[0]+rect[2]/2, rect[1]+rect[3]/2], [rect[0]+rect[2]/2, rect[1]-rect[3]/2]]   # rt to rb
     rect_line_3 = [[rect[0]+rect[2]/2, rect[1]-rect[3]/2], [rect[0]-rect[2]/2, rect[1]-rect[3]/2]]   # lb to rb
     rect_line_4 = [[rect[0]-rect[2]/2, rect[1]-rect[3]/2], [rect[0]-rect[2]/2, rect[1]+rect[3]/2]]   # lb to lt
 
-    if get_line_line_intersection(line, rect_line_1) is not None:
+    if get_beam_line_intersection(beam, rect_line_1) is not None:
         ret_val = True
-    if get_line_line_intersection(line, rect_line_2) is not None:
+    if get_beam_line_intersection(beam, rect_line_2) is not None:
         ret_val = True
-    if get_line_line_intersection(line, rect_line_3) is not None:
+    if get_beam_line_intersection(beam, rect_line_3) is not None:
         ret_val = True
-    if get_line_line_intersection(line, rect_line_4) is not None:
+    if get_beam_line_intersection(beam, rect_line_4) is not None:
         ret_val = True
 
     return ret_val
@@ -73,39 +81,38 @@ def get_line_box_intersection(line, box):
     rect_line_3 = [[box.x2, box.y2], [box.x1, box.y2]]   # lb to rb
     rect_line_4 = [[box.x1, box.y2], [box.x1, box.y1]]   # lb to lt
 
-    if get_line_line_intersection(line, rect_line_1) is not None:
+    if get_beam_line_intersection(line, rect_line_1) is not None:
         ret_val = True
-    if get_line_line_intersection(line, rect_line_2) is not None:
+    if get_beam_line_intersection(line, rect_line_2) is not None:
         ret_val = True
-    if get_line_line_intersection(line, rect_line_3) is not None:
+    if get_beam_line_intersection(line, rect_line_3) is not None:
         ret_val = True
-    if get_line_line_intersection(line, rect_line_4) is not None:
+    if get_beam_line_intersection(line, rect_line_4) is not None:
         ret_val = True
 
     return ret_val
 
 
-def fit_beam_end_to_rect(beam, top_left, bot_right):
-    # Rect corners
-    top_right = [bot_right[0], top_left[1]]
-    bot_left = [top_left[0], bot_right[1]]
+def fit_beam_end_to_frame(beam: Beam, frame: Frame):
+    if get_beam_line_intersection(beam, (frame.top_left, frame.top_right)) is not None:  # tl - tr
+        beam.end_xy = (get_beam_line_intersection(beam, (frame.top_left, frame.top_right)))
 
-    if get_line_line_intersection(beam, [top_left, top_right]) is not None:  #  lt - rt
-        beam[1] = (get_line_line_intersection(beam, [top_left, top_right]))
+    if get_beam_line_intersection(beam, (frame.top_right, frame.bot_right)) is not None:  # tr - br
+        beam.end_xy = (get_beam_line_intersection(beam, (frame.top_right, frame.bot_right)))
 
-    if get_line_line_intersection(beam, [top_right, bot_right]) is not None:  # rt - rb
-        beam[1] = (get_line_line_intersection(beam, [top_right, bot_right]))
+    if get_beam_line_intersection(beam, (frame.bot_right, frame.bot_left)) is not None:  # br - bl
+        beam.end_xy = (get_beam_line_intersection(beam, (frame.bot_right, frame.bot_left)))
 
-    if get_line_line_intersection(beam, [bot_right, bot_left]) is not None:  # rb - lb
-        beam[1] = (get_line_line_intersection(beam, [bot_right, bot_left]))
-
-    if get_line_line_intersection(beam, [bot_left, top_left]) is not None:  # lb - lt
-        beam[1] = (get_line_line_intersection(beam, [bot_left, top_left]))
-
+    if get_beam_line_intersection(beam, (frame.bot_left, frame.top_left)) is not None:  # bl - tl
+        beam.end_xy = (get_beam_line_intersection(beam, (frame.bot_left, frame.top_left)))
     return beam
 
 
 def closest_point_on_segment(segment_start, segment_end, point):
+    segment_start = np.array(segment_start)
+    segment_end = np.array(segment_end)
+    point = np.array(point)
+
     segment_vector = segment_end - segment_start  # Get vector from line start to line end
     point_vector = point - segment_start  # Get vector from line start to the point
     projection_length = point_vector.dot(segment_vector) / segment_vector.dot(segment_vector)  # Get projection of point vector to segment vector
@@ -116,7 +123,7 @@ def closest_point_on_segment(segment_start, segment_end, point):
         return segment_end
     else:
         projection = segment_start + projection_length * segment_vector
-        return projection
+        return tuple(projection)
 
 
 def distance_point_to_point(point1, point2):
