@@ -6,6 +6,8 @@ import hands_processing as hands_proc
 import my_mediapipe as mmp
 import geometry as geom
 import numpy as np
+import preprocessing as pre
+import keypoint_classifier as kpc
 
 
 # class Frame:
@@ -60,6 +62,25 @@ def refresh_frame(frame):
     cv.imshow('image', output_img)
 
 
+# function from kazuhito  TODO: rework it
+def calc_bounding_rect(image, landmarks):
+    image_width, image_height = image.shape[1], image.shape[0]
+
+    landmark_array = np.empty((0, 2), int)
+
+    for _, landmark in enumerate(landmarks):
+        landmark_x = min(int(landmark.x * image_width), image_width - 1)
+        landmark_y = min(int(landmark.y * image_height), image_height - 1)
+
+        landmark_point = [np.array((landmark_x, landmark_y))]
+
+        landmark_array = np.append(landmark_array, landmark_point, axis=0)
+
+    x, y, w, h = cv.boundingRect(landmark_array)
+
+    return [x, y, x + w, y + h]
+
+
 # Function that starts cv2 loop
 def start_cv2():
     # TODO Check if cam != None, throw exception
@@ -80,16 +101,23 @@ def start_cv2():
         if beam_r is not None:
             cv.line(frame, beam_r.start_xy, beam_r.end_xy, (0, 0, 255), 4)
             bb.get_pointed_box_id(beam_r)
-        if bb.pointed_box_id is not None:
-            # TODO rework this ugly snapping
-            box_center = (int((bb.boxes_list[bb.pointed_box_id].x1 + bb.boxes_list[bb.pointed_box_id].x2) / 2),
-                          int((bb.boxes_list[bb.pointed_box_id].y1 + bb.boxes_list[bb.pointed_box_id].y2) / 2))
-            closest_point = tuple(map(int, geom.closest_point_on_segment(beam_r.start_xy, beam_r.end_xy, box_center)))
-            cv.line(frame, np.array(box_center), closest_point, (255, 255, 255), 2)
+            if bb.pointed_box_id is not None:
+                # TODO rework this ugly snapping
+                box_center = (int((bb.boxes_list[bb.pointed_box_id].x1 + bb.boxes_list[bb.pointed_box_id].x2) / 2),
+                              int((bb.boxes_list[bb.pointed_box_id].y1 + bb.boxes_list[bb.pointed_box_id].y2) / 2))
+                closest_point = tuple(map(int, geom.closest_point_on_segment(beam_r.start_xy, beam_r.end_xy, box_center)))
+                cv.line(frame, np.array(box_center), closest_point, (255, 255, 255), 2)
 
         frame = mmp.draw_pose_landmarks(frame, pose_landmarks)
         # frame = mmp.draw_both_hands_landmarks(frame, hands_landmarks)
         mmp.draw_one_hand_landmarks(frame, hands_landmarks)
+        if hands_landmarks is not None:
+            # TODO: copied from pose, rework for gesture
+            flat_hand_lm_list = pre.flatten_landmark_list_xyz(hands_landmarks.landmark)
+            pre_processed_landmark_list = pre.preprocess_to_base_point_xy(flat_hand_lm_list)
+
+            hand_sign_id = kpc.classify_gesture(pre_processed_landmark_list)
+            print(hand_sign_id)
 
         input_key = cv.waitKey(10)  # Argument must be "10" to not freeze on first frame
 
