@@ -4,10 +4,10 @@ import input_event_handler as ieh
 import pose_processing as pose_proc
 import hands_processing as hands_proc
 import my_mediapipe as mmp
-import geometry as geom
 import numpy as np
 import preprocessing as pre
 import keypoint_classifier as kpc
+import bulb
 
 
 # class Frame:
@@ -81,6 +81,24 @@ def calc_bounding_rect(image, landmarks):
     return [x, y, x + w, y + h]
 
 
+def draw_bounding_rect(image, brect):
+    cv.rectangle(image, (brect[0], brect[1]), (brect[2], brect[3]),
+                 (0, 0, 0), 1)
+    return image
+
+
+def draw_info_text(image, brect, hand_sign_text):
+    cv.rectangle(image, (brect[0], brect[1]), (brect[2], brect[1] - 22),
+                 (0, 0, 0), -1)
+
+    if hand_sign_text != "":
+        info_text =  hand_sign_text
+    cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
+               cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv.LINE_AA)
+
+    return image
+
+
 # Function that starts cv2 loop
 def start_cv2():
     # TODO Check if cam != None, throw exception
@@ -91,35 +109,55 @@ def start_cv2():
         frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         frame.flags.writeable = False
         pose_landmarks = pose_proc.get_pose_landmarks(frame)
-        # hands_landmarks = hands_proc.get_both_hands_landmarks(frame)
-        hands_landmarks = hands_proc.get_one_hand_landmarks(frame, 'r')
+        hands_landmarks = hands_proc.get_both_hands_landmarks(frame)
+        # hands_landmarks = hands_proc.get_one_hand_landmarks(frame, 'r')
         frame.flags.writeable = True
         frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
 
-        # TODO move beams somewhere else
-        beam_r = pose_proc.get_right_beam(pose_landmarks)
-        if beam_r is not None:
-            cv.line(frame, beam_r.start_xy, beam_r.end_xy, (0, 0, 255), 4)
-            bb.get_pointed_box_id(beam_r)
-            if bb.pointed_box_id is not None:
-                # TODO rework this ugly snapping
-                box_center = (int((bb.boxes_list[bb.pointed_box_id].x1 + bb.boxes_list[bb.pointed_box_id].x2) / 2),
-                              int((bb.boxes_list[bb.pointed_box_id].y1 + bb.boxes_list[bb.pointed_box_id].y2) / 2))
-                closest_point = tuple(map(int, geom.closest_point_on_segment(beam_r.start_xy, beam_r.end_xy, box_center)))
-                cv.line(frame, np.array(box_center), closest_point, (255, 255, 255), 2)
-
         frame = mmp.draw_pose_landmarks(frame, pose_landmarks)
-        # frame = mmp.draw_both_hands_landmarks(frame, hands_landmarks)
-        mmp.draw_one_hand_landmarks(frame, hands_landmarks)
-        if hands_landmarks is not None:
-            # TODO: copied from pose, rework for gesture
-            flat_hand_lm_list = pre.flatten_landmark_list_xyz(hands_landmarks.landmark)
-            pre_processed_landmark_list = pre.preprocess_to_base_point_xy(flat_hand_lm_list)
+        frame = mmp.draw_both_hands_landmarks(frame, hands_landmarks)
 
-            hand_sign_id = kpc.classify_gesture(pre_processed_landmark_list)
-            print(hand_sign_id)
+        if pose_landmarks is not None:
+            pre_processed_pose_lms = pre.pose_preprocess_to_base_point_xy(pre.calc_landmark_list(pose_landmarks.landmark))
+            pose_id = kpc.classify_pointing(pre_processed_pose_lms)
+            pose_brect = calc_bounding_rect(frame, pose_landmarks.landmark)
+            frame = draw_bounding_rect(frame, pose_brect)
+            frame = draw_info_text(frame, pose_brect, kpc.pointing_classifier_labels[pose_id])
 
-        input_key = cv.waitKey(10)  # Argument must be "10" to not freeze on first frame
+            if pose_id == 1:
+                # TODO move beams somewhere else
+                beam_r = pose_proc.get_right_beam(pose_landmarks)
+                beam_l = pose_proc.get_left_beam(pose_landmarks)
+                if beam_r is not None:
+                    cv.line(frame, beam_r.start_xy, beam_r.end_xy, (0, 0, 255), 4)
+                    bb.get_pointed_box_id(beam_r)
+                    if bb.pointed_box_id is not None:
+                        snap_dist, closest_point, box_center = bb.get_snap(beam_r, bb.boxes_list[bb.pointed_box_id])
+                        cv.line(frame, np.array(box_center), closest_point, (255, 255, 255), 2)
+
+                # mmp.draw_one_hand_landmarks(frame, hands_landmarks)
+                if hands_landmarks is not None:
+                    for landmarks in hands_landmarks:
+                        pre_processed_landmark_list = pre.hands_preprocess_to_base_point_xy(pre.calc_landmark_list(landmarks.landmark))
+
+                        gesture_id = kpc.classify_gesture(pre_processed_landmark_list)
+                        # print(hand_sign_id)
+
+                        # TODO move this somewhere and refactor
+                        brect = calc_bounding_rect(frame, landmarks.landmark)
+                        frame = draw_bounding_rect(frame, brect)
+                        frame = draw_info_text(
+                            frame,
+                            brect,
+                            kpc.gesture_classifier_labels[gesture_id],
+                        )
+                        action = hands_proc.update_gesture(gesture_id)
+                        if bb.pointed_box_id == 0 and action == 1:
+                            bulb.switch_on()
+                        if bb.pointed_box_id == 0 and action == 0:
+                            bulb.switch_off()
+
+        input_key = cv.waitKey(10)  # Argument must be "10" to not freeze on the first frame
 
         if input_key == 27:  # ESC
             break

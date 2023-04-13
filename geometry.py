@@ -123,7 +123,7 @@ def closest_point_on_segment(segment_start, segment_end, point):
         return segment_end
     else:
         projection = segment_start + projection_length * segment_vector
-        return tuple(projection)
+        return tuple(map(int, projection))
 
 
 def distance_point_to_point(point1, point2):

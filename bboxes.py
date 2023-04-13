@@ -1,7 +1,6 @@
 import json
 import os
 import geometry as geom
-import numpy as np
 
 
 path_to_bboxes = "bboxes.json"
@@ -99,7 +98,7 @@ def load_bboxes():
     if os.path.isfile(path_to_bboxes):
         if os.stat(path_to_bboxes).st_size != 0:
             boxes_file = open(path_to_bboxes)
-            # TODO catch empty file or non-jsom format
+            # TODO catch empty file or non-json format
             boxes_list = json.load(boxes_file, object_hook=Bbox.from_json)
             return boxes_list
         else:
@@ -116,11 +115,18 @@ def save_bboxes():
     json_file.close()
 
 
-def get_snap_distance(beam, box: Bbox):
-    box_center = ((box.x1+box.x2)/2, (box.y1+box.y2)/2)
+# def get_snap_distance(beam, box: Bbox):
+#     box_center = ((box.x1+box.x2)/2, (box.y1+box.y2)/2)
+#     closest_point = geom.closest_point_on_segment(beam.start_xy, beam.end_xy, box_center)
+#     distance = int(geom.distance_point_to_point(closest_point, box_center))
+#     return distance
+
+
+def get_snap(beam, box: Bbox):
+    box_center = (int((box.x1+box.x2)/2), int((box.y1+box.y2)/2))
     closest_point = geom.closest_point_on_segment(beam.start_xy, beam.end_xy, box_center)
     distance = int(geom.distance_point_to_point(closest_point, box_center))
-    return distance
+    return distance, closest_point, box_center
 
 
 # TODO: what if beam intersects more than one box?
@@ -133,11 +139,13 @@ def get_pointed_box_id(beam):
                 return box.id
             else:
                 if pointed_box_id is not None:  # TODO change this ugly check
-                    print(get_snap_distance(beam, boxes_list[pointed_box_id]))
-                    if get_snap_distance(beam, boxes_list[pointed_box_id]) > max_snap_distance:
+                    snapping_dist = get_snap(beam, boxes_list[pointed_box_id])[0]
+                    print(snapping_dist)
+                    if snapping_dist > max_snap_distance:
                         pointed_box_id = None
                         return None
     else:
         pointed_box_id = None
         return None
+
 

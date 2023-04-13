@@ -1,5 +1,7 @@
 import my_mediapipe as mmp
-import geometry as geom
+
+
+actual_gesture_id = 0
 
 
 def get_both_hands_landmarks(frame):
@@ -39,3 +41,15 @@ def get_one_hand_landmarks(frame, requested_hand_type):  # TODO Hands are invert
         else:
             print("Wrong requested hand type.")
             return None
+
+
+def update_gesture(new_gesture_id):
+    # TODO add regulation
+    global actual_gesture_id
+    if actual_gesture_id != new_gesture_id:
+        if ((actual_gesture_id == 1) or (actual_gesture_id == 2)) and new_gesture_id == 0:
+            actual_gesture_id = new_gesture_id
+            return 0
+        if (actual_gesture_id == 0) and ((new_gesture_id == 1) or (new_gesture_id == 2)):
+            actual_gesture_id = new_gesture_id
+            return 1
